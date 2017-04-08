@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>A very simple two component demo</title>
+    <script>
+        function createFileDiv(f) {
+            var div = document.createElement("div");
+            div.appendChild(
+                document.createTextNode("Selected File { name: " + f.name + ", size: " + printBytes(f.size) + ", type: " + (f.type || "<none>") + "}"));
+            div.file = f; // saves a reference to the file for use later, like to upload.  Not strictly necessary here.
+            return div;
+        }
+
+        function printBytes(totalBytes) {
+            // optional code for multiples approximation
+            //  from -> https://developer.mozilla.org/en-US/docs/Using_files_from_web_applications
+            var sOutput = "";
+            for (var aMultiples = ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"], nMultiple = 0, nApprox = totalBytes / 1024; nApprox > 1; nApprox /= 1024, nMultiple++) {
+                sOutput = nApprox.toFixed(3) + " " + aMultiples[nMultiple] + " (" + totalBytes + " bytes)";
+            }
+            return sOutput || totalBytes + " bytes";
+        }
+
+        function handleFiles(files) {
+            var output = document.getElementById("output");
+            var totalBytes = 0;
+            for (var i = 0; i < files.length; i++) {
+                var f = files[i];
+                totalBytes += f.size;
+
+                var div = createFileDiv(f);
+
+                if (/^image\//.test(f.type)) {
+                    // this could also be done with Object URLs
+                    //   https://developer.mozilla.org/en-US/docs/Using_files_from_web_applications#Example_Using_object_URLs_to_display_images
+                    var img = document.createElement("img");
+                    img.classList.add("previewImg");
+                    img.style = "height: 2em;";
+                    div.appendChild(img);
+
+                    var reader = new FileReader();
+                    reader.onload = (function(imgTag) {
+                        return function(e) {
+                            imgTag.src = e.target.result;
+                        };
+                    })(img); // this is because we're in a loop and we need to capture each img tag, if we don't include the wraper function we'll get the last item in the list always because of the way closure works
+                    reader.readAsDataURL(f);
+                }
+
+                var uploadBtn = document.createElement("button");
+                uploadBtn.appendChild(document.createTextNode("Upload"));
+                uploadBtn.onclick = function(e) {
+                    var f = e.currentTarget.parentNode.file;
+                    console.log("Upload -> " + f.name);
+                    uploadFile(e.currentTarget.parentNode, f);
+                };
+                div.appendChild(uploadBtn);
+
+                output.appendChild(div);
+            }
+
+            document.getElementById("total").innerHTML = printBytes(totalBytes);
+        }
+
+        function uploadFile(div, f) {
+            // setup form data for sending a file
+            var form = new FormData();
+            form.append("file", f);
+
+            // setup the request to be sent
+            var xhr = new XMLHttpRequest();
+
+            xhr.upload.addEventListener("progress", function(e) {
+                if (e.lengthComputable) {
+                    var percentage = Math.round((e.loaded * 100) / e.total);
+                    div.style.background = 'linear-gradient(90deg, green ' + percentage + ', white ' + (100 - percentage) + ')';
+                }
+            }, false);
+
+            xhr.upload.addEventListener("abort", function(e) {
+                    div.style.background = 'orange';
+                    console.warn("Upload aborted!");
+            });
+
+            xhr.upload.addEventListener("error", function(e) {
+                    div.style.background = 'red';
+                    console.error("Upload failed!");
+            });
+
+            xhr.upload.addEventListener("timeout", function(e) {
+                    div.style.background = 'blue';
+                    console.warn("Upload timed out!");
+            });
+
+            xhr.upload.addEventListener("load", function(e) {
+                console.info("Upload Load Event");
+            }, false);
+
+            xhr.addEventListener("readystatechange", function(e) {
+                // console.info("Ready State [" + xhr.readyState + "]");
+                if (xhr.readyState == 4) {
+                    console.info("Response status = " + xhr.status);
+                    if (xhr.status >= 400 && xhr.status < 600) {
+                        div.style.background = 'red';
+                    } else {
+                        div.style.background = 'green';
+                        setTimeout(function() {
+                            div.style.background = 'white';
+                        }, 1000);
+                    }
+                }
+            });
+
+            xhr.open("POST", "http://localhost:5001/upload");
+            xhr.send(form);
+
+            // Might want to change the type, like if you were to send JSON.
+            // xhr.overrideMimeType('text/plain; charset=x-user-defined-binary');
+
+            // This could also be done with a FileReader, for example if there
+            //   needed to be any preprocessing done on the file.
+            // var reader = new FileReader();
+            // reader.onload = function(e) {
+            //     xhr.send(e.target.result);
+            // };
+            // reader.readAsBinaryString(f);
+        }
+
+        function anchorSelect(e) {
+            var fileInput = document.getElementById("upload");
+            if (fileInput) {
+                fileInput.click();
+            }
+            e.preventDefault();
+        }
+
+        function dragenter(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
+        function dragover(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+
+        function drop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            var dt = e.dataTransfer;
+            if (dt) {
+                handleFiles(dt.files);
+            }
+        }
+
+        window.onload = function() {
+            var dropbox = document.getElementById("dropbox");
+            dropbox.addEventListener("dragenter", dragenter, false);
+            dropbox.addEventListener("dragover", dragover, false);
+            dropbox.addEventListener("drop", drop, false);
+        };
+    </script>
+  </head>
+  <body>
+    <form action="" style="margin-bottom: 1em;">
+        <label for="upload">Select File:</label>
+        <input type="file" id="upload" multiple onchange="handleFiles(this.files)" />
+        <a href="#" id="fileSelect" onclick="anchorSelect(event)">Also works to select files</a>
+    </form>
+    <div id="dropbox" style="border: thin solid black; margin-bottom: 1em;">
+        <h3>Drag files here</h3>
+    </div>
+    <div>Total Size: <span id="total">0</span></div>
+    <div id="output">
+    </div>
+  </body>
+</html>

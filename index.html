@@ -34,6 +34,14 @@
             return sOutput || totalBytes + " bytes";
         }
 
+        function printBps(totalBits) {
+            var sOutput = "";
+            for (var aMultiples = ["Kbps", "Mbps", "Gbps", "Tbps"], nMultiple = 0, nApprox = totalBits / 1024; nApprox > 1; nApprox /= 1024, nMultiple++) {
+                sOutput = nApprox.toFixed(3) + " " + aMultiples[nMultiple];
+            }
+            return sOutput || totalBits + " bps";
+        }
+
         function handleFiles(files) {
             var output = document.getElementById("output");
             var totalBytes = 0;
@@ -73,22 +81,31 @@
             var form = new FormData();
             form.append("file", f);
 
+            // for calculating upload speed
+            var startTime;
+
             // setup the request to be sent
             var xhr = new XMLHttpRequest();
 
             xhr.upload.addEventListener("progress", function(e) {
+                var now = new Date().getTime();
                 if (e.lengthComputable) {
                     var percentage = Math.round((e.loaded * 100) / e.total);
+                    var duration = (now - startTime) / 1000;
+                    var speed = e.loaded * 8 / duration;
                     div.style.background = 'linear-gradient(90deg, green ' + percentage + '%, white 0%)';
-                    div.querySelector("span").innerHTML = "Upload at " + percentage + "%";
+                    // console.log("Loaded: " + e.loaded + " now: " + now + " start: " + startTime + " Upload at " + percentage + "% -- " + printBps(speed));
+                    div.querySelector("span").innerHTML = "Upload at " + percentage + "% -- " + printBps(speed);
                 }
             }, false);
 
             xhr.upload.addEventListener("loadstart", function(e) {
+                console.log("starting upload");
                 div.querySelector("button").remove();
                 var span = document.createElement("span");
                 span.appendChild(document.createTextNode("upload starting"));
                 div.appendChild(span);
+                startTime = new Date().getTime();
             });
 
             xhr.upload.addEventListener("abort", function(e) {
@@ -117,8 +134,9 @@
                         div.style.background = 'red';
                         div.querySelector("span").innerHTML = "Server Error -> Status: " + xhr.status;
                     } else {
+                        var diff = (new Date().getTime() - startTime) / 1000;
                         div.style.background = 'green';
-                        div.querySelector("span").innerHTML = "Upload finished OK!";
+                        div.querySelector("span").innerHTML = "Upload finished OK in " + diff.toFixed(3) + " secs!";
                         setTimeout(function() {
                             div.style.background = 'white';
                             div.querySelector("span").remove();

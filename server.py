@@ -6,7 +6,9 @@ from werkzeug.utils import secure_filename
 logging.basicConfig(level=logging.INFO)
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
-ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'mov'])
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER

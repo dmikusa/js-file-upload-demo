@@ -14,6 +14,16 @@
             return div;
         }
 
+        function createUploadButton() {
+            var uploadBtn = document.createElement("button");
+            uploadBtn.appendChild(document.createTextNode("Upload"));
+            uploadBtn.onclick = function(e) {
+                var f = e.currentTarget.parentNode.file;
+                uploadFile(e.currentTarget.parentNode, f);
+            };
+            return uploadBtn;
+        }
+
         function printBytes(totalBytes) {
             // optional code for multiples approximation
             //  from -> https://developer.mozilla.org/en-US/docs/Using_files_from_web_applications
@@ -50,14 +60,7 @@
                     reader.readAsDataURL(f);
                 }
 
-                var uploadBtn = document.createElement("button");
-                uploadBtn.appendChild(document.createTextNode("Upload"));
-                uploadBtn.onclick = function(e) {
-                    var f = e.currentTarget.parentNode.file;
-                    console.log("Upload -> " + f.name);
-                    uploadFile(e.currentTarget.parentNode, f);
-                };
-                div.appendChild(uploadBtn);
+                div.appendChild(createUploadButton());
 
                 output.appendChild(div);
             }
@@ -76,28 +79,35 @@
             xhr.upload.addEventListener("progress", function(e) {
                 if (e.lengthComputable) {
                     var percentage = Math.round((e.loaded * 100) / e.total);
-                    div.style.background = 'linear-gradient(90deg, green ' + percentage + ', white ' + (100 - percentage) + ')';
+                    div.style.background = 'linear-gradient(90deg, green ' + percentage + '%, white 0%)';
+                    div.querySelector("span").innerHTML = "Upload at " + percentage + "%";
                 }
             }, false);
 
+            xhr.upload.addEventListener("loadstart", function(e) {
+                div.querySelector("button").remove();
+                var span = document.createElement("span");
+                span.appendChild(document.createTextNode("upload starting"));
+                div.appendChild(span);
+            });
+
             xhr.upload.addEventListener("abort", function(e) {
-                    div.style.background = 'orange';
-                    console.warn("Upload aborted!");
+                div.style.background = 'orange';
+                console.warn("Upload aborted!");
+                div.querySelector("span").innerHTML = "Upload Aborted!";
             });
 
             xhr.upload.addEventListener("error", function(e) {
-                    div.style.background = 'red';
-                    console.error("Upload failed!");
+                div.style.background = 'red';
+                console.error("Upload failed!");
+                div.querySelector("span").innerHTML = "Upload Errored!";
             });
 
             xhr.upload.addEventListener("timeout", function(e) {
-                    div.style.background = 'blue';
-                    console.warn("Upload timed out!");
+                div.style.background = 'blue';
+                console.warn("Upload timed out!");
+                div.querySelector("span").innerHTML = "Upload Timeout!";
             });
-
-            xhr.upload.addEventListener("load", function(e) {
-                console.info("Upload Load Event");
-            }, false);
 
             xhr.addEventListener("readystatechange", function(e) {
                 // console.info("Ready State [" + xhr.readyState + "]");
@@ -105,11 +115,15 @@
                     console.info("Response status = " + xhr.status);
                     if (xhr.status >= 400 && xhr.status < 600) {
                         div.style.background = 'red';
+                        div.querySelector("span").innerHTML = "Server Error -> Status: " + xhr.status;
                     } else {
                         div.style.background = 'green';
+                        div.querySelector("span").innerHTML = "Upload finished OK!";
                         setTimeout(function() {
                             div.style.background = 'white';
-                        }, 1000);
+                            div.querySelector("span").remove();
+                            div.appendChild(createUploadButton());
+                        }, 5000);
                     }
                 }
             });

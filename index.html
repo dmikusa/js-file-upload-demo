@@ -161,6 +161,15 @@
             // reader.readAsBinaryString(f);
         }
 
+        function clearOutput(e) {
+            var list = document.querySelectorAll("div#output div");
+            for (var i = 0; i < list.length; i++) {
+                list[i].remove();
+            }
+            document.getElementById("total").innerHTML = printBytes(0);
+            e.preventDefault();
+        }
+
         function anchorSelect(e) {
             var fileInput = document.getElementById("upload");
             if (fileInput) {
@@ -202,11 +211,12 @@
         <label for="upload">Select File:</label>
         <input type="file" id="upload" multiple onchange="handleFiles(this.files)" />
         <a href="#" id="fileSelect" onclick="anchorSelect(event)">Also works to select files</a>
+        <button onclick="clearOutput(event)">Clear Output</button>
     </form>
     <div id="dropbox" style="border: thin solid black; margin-bottom: 1em;">
         <h3>Drag files here</h3>
     </div>
-    <div>Total Size: <span id="total">0</span></div>
+    <div>Total Size: <span id="total">0 bytes</span></div>
     <div id="output">
     </div>
   </body>

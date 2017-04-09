@@ -114,7 +114,7 @@
                 }
             });
 
-            xhr.open("POST", "http://localhost:5001/upload");
+            xhr.open("POST", location.protocol + "//" + location.host + "/upload");
             xhr.send(form);
 
             // Might want to change the type, like if you were to send JSON.

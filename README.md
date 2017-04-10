@@ -25,6 +25,13 @@ It includes code to:
 
 The URL to access in your browser will be printed out, but by default the app listens on port 5001 so http://localhost:5001/ should work.
 
+### Go Server App
+
+1. Install Go & setup GOPATH / GOROOT
+2. Run `go run server.go`
+
+The URL to access in your browser will be printed out, but by default the app listens on port 5001 so http://localhost:5001/ should work.
+
 ### Javascript
 
 You can also just open `index.html` in your browser directly.  This will work for all of the functionality except the file upload part.  You need the server running to test that.

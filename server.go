@@ -57,7 +57,7 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir(pwd)))
 	http.Handle("/uploads/", http.StripPrefix("/uploads", http.FileServer(http.Dir(uploadDir))))
 	http.HandleFunc("/upload", handleUpload)
-	err = http.ListenAndServe(":9090", nil)
+	err = http.ListenAndServe(":5001", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
